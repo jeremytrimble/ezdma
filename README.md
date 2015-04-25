@@ -33,7 +33,7 @@ Simple, zero-copy DMA to/from userspace.
         read (rx_fd, rx_buf, xfer_size);
     ```
 
-See [Documentation/devicetree/bindings/dma/ezdma.txt](../blob/master/Documentation/devicetree/bindings/dma/ezdma.txt) for additional example info.
+See [Documentation/devicetree/bindings/dma/ezdma.txt](../master/Documentation/devicetree/bindings/dma/ezdma.txt) for additional example info.
 
 ## Compiling
 
