@@ -58,8 +58,8 @@ In the future, I hope to refine and contribute ezdma to the mainline kernel.
 
 ## Resources
 
-[Linux Device Tree Background]( http://devicetree.org/Device_Tree_Usage )
-[Xilinx AXI DMA Driver]( https://github.com/Xilinx/linux-xlnx/blob/master/drivers/dma/xilinx/xilinx_axidma.c )
+1. [Linux Device Tree Background]( http://devicetree.org/Device_Tree_Usage )
+2. [Xilinx AXI DMA Driver]( https://github.com/Xilinx/linux-xlnx/blob/master/drivers/dma/xilinx/xilinx_axidma.c )
 
 ## License (GPL)
 
