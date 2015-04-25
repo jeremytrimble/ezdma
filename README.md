@@ -14,7 +14,7 @@ Simple, zero-copy DMA to/from userspace.
                                 //   1 = RX (dev->cpu), 2 = TX (cpu->dev)
     };
     ```
-
+Note that it's possible to specify multiple nodes which reference the ezdma module in their "compatible" strings -- you'll get an entry in /dev for every name you've specified in "dma-names" across all of your nodes.
 
 2. After inserting the ezdma module, two devices, as named in your `dma-names` above, will become available:
 
@@ -42,6 +42,19 @@ A Makefile for out-of-tree building is supplied.  You just need to point it to t
     make KERNELDIR=/path/to/your/kernel
 
 Currently the Makefile assumes you want to cross-compile for ARM by default, but you're free to override the `ARCH` and/or `CROSS_COMPILE` variables on the command line or on in your environment.  (I'd be interested to hear how it works on non-ARM platforms, as well!)
+
+## Inserting into the kernel
+
+Once you've compiled, transfer the ezdma.ko module to your target system, and run:
+
+    insmod ezdma.ko
+    
+For each DMA channel you've added (in the "dma-names" field in the device tree), you should see a message like the following printed in dmesg:
+
+    ezdma: loop_tx (TX) available
+    ezdma: loop_rx (RX) available
+    
+The `/dev/loop_tx` and `/dev/loop_rx` devices should now be available, as shown in point 2 of the example above.
 
 ## Other info
 
