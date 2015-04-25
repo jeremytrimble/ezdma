@@ -1,0 +1,65 @@
+"ezdma" module:  Simple zero-copy DMA direct from userspace.
+
+TODO: clean up this documentation a little bit.
+
+You insert a simple "ezdma" entry in your device tree like so:
+
+        /* DMA loopback in PL: mm2s -> AXI FIFO -> s2mm */
+        loopback_dma: axidma@40410000 {
+            #dma-cells = <1>;
+            compatible = "xlnx,axi-dma";
+            reg = < 0x40410000 0x10000 >;
+
+            xlnx,include-sg;
+            loopback_dma_mm2s_chan: dma-channel@40410000 {
+                compatible = "xlnx,axi-dma-mm2s-channel";
+                interrupt-parent = <&gic>;
+                interrupts = <0 31 4>;  // concat port 2
+                                        // IRQ_F2P[15:0] == [91:84],[68:61]
+                                        // 2 -> 63 -> 63 - 32 = 31
+
+                xlnx,datawidth = <0x20>;        // 32-bit output
+                xlnx,sg-length-width = <14>;    // Width of Buffer Length Register (configured for 20 bits)
+
+                xlnx,device-id = <0x1>;     // what's this for?
+            };
+
+            loopback_dma_s2mm_chan: dma-channel@40410030 {
+                compatible = "xlnx,axi-dma-s2mm-channel";
+                interrupt-parent = <&gic>;
+                interrupts = <0 32 4>;  // concat port 3 
+                                        // IRQ_F2P[15:0] == [91:84],[68:61]
+                                        // 3 -> 64 -> 64 - 32 = 32
+
+                xlnx,datawidth = <0x20>;        // 32-bit output
+                xlnx,sg-length-width = <14>;    // Width of Buffer Length Register (configured for 20 bits)
+
+                xlnx,device-id = <0x1>;     // what's this for?
+            };
+        };
+
+        ezdma0 {
+            compatible = "ezdma";
+
+            dmas = <&loopback_dma 0 &loopback_dma 1>;
+            dma-names = "loop_tx", "loop_rx";   // used when obtaining reference to above DMA core using dma_request_slave_channel()
+            ezdma,dirs = <2 1>;                 // direction of DMA channel: 1 = RX (dev->cpu), 2 = TX (cpu->dev)
+        };
+
+This will cause two devices "/dev/loop_tx" and "/dev/loop_rx" to show up on the
+system when the "ezdma" module is loaded.
+
+You can send an AXI stream packet by doing:
+int fd = open("/dev/loop_tx", O_WRONLY);
+write(fd, tx_buf, packet_size_in_bytes);
+
+And you can receive an AXI stream packet by doing:
+int fd = open("/dev/loop_rx", O_RDONLY);
+read(fd, rx_buf, packet_size_in_bytes);
+
+This makes using DMA really easy.  It works great from Python too (that's how
+I'm using it).  Unfortunately, you can't just "cat datafile > /dev/loop_tx" to
+send data, since the size of the packet is passed as an argument to
+write()/read() and "cat" just sets that to whatever it likes.  I have an
+enhancement in mind for the future that would remove this restriction, but no
+time to implement it now.
