@@ -58,11 +58,18 @@ The `/dev/loop_tx` and `/dev/loop_rx` devices should now be available, as shown 
 
 ## Other info
 
-Tested with:
-- Xilinx AXI DMA on Zynq-7000 SoC.
+### "Loopback" example
+See [examples/loopback](../examples/loopback) for example C code, Zynq PL block diagram (TCL file for Vivado 2014.2), and example device tree entries used to perform a simple "loopback" test where AXI-Stream packets are written to and read from the Zynq PL.
+The example code here achieves ~20 MBytes/sec throughput, but that's sending and receiving 1 packet at a time (2048-byte packets, 100 MHz clock in the PL).  Streaming (independently sending and receiving) could probably achieve at least double the throughput.  Also, the packet size can be increased to increase overall througput (if your application allows it).
+
+### Tested with:
+So far, I've used the ezdma module with:
+- Xilinx AXI DMA on Zynq-7000 SoC. (ZedBoard)
+
+I hope to add more CPUs/DMA devices above as this module gets used in other places.  If you've had success on other platforms, let me know and I can post it here (or send a pull request with example code).
     
 
-Future enhancements:
+### Future enhancements:
 * Allow a forced transaction size to be specified in sysfs (such that DMA transfers are always performed in increments of the given size).
   * This would be useful when sending AXI stream packets of a particular size and would allow simple usages like `cat packet_file > /dev/my_tx` or `cat /dev/my_rx > packet_file`.
 * Add user-space scatter-gather `readv()`/`writev()` support.
