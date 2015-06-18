@@ -38,6 +38,8 @@
 #include <linux/cdev.h>
 #include <linux/wait.h>
 
+#include <linux/amba/xilinx_dma.h>  // hacky
+
 #define EZDMA_DEV_NAME_MAX_CHARS (16)
 
 #define SEM_TAKE_TIMEOUT (5)
@@ -86,7 +88,7 @@ struct ezdma_drvdata {
     wait_queue_head_t    wq;
 
     /* dmaengine */
-    struct dma_chan *chan;
+	struct dma_chan *chan;
 
     /* device accounting */
     dev_t           ezdma_devt;
@@ -149,6 +151,7 @@ static inline int put_devno(dev_t dev)
 }
 
 
+static int ezdma_configure_dma_device( struct ezdma_drvdata * p_info );
 
 static int ezdma_open(struct inode *inode, struct file *filp);
 static ssize_t ezdma_read(struct file *filp, char __user *userbuf, size_t count, loff_t *f_pos);
@@ -156,12 +159,12 @@ static ssize_t ezdma_write(struct file *filp, const char __user *userbuf, size_t
 static int ezdma_release(struct inode *inode, struct file *filp);
 
 static const struct file_operations ezdma_fops = {
-    .owner      = THIS_MODULE,
-    .open       = ezdma_open,
-    .read       = ezdma_read,
-    .write      = ezdma_write,
-    .release    = ezdma_release,
-    //.poll       = ezdma_poll,
+	.owner      = THIS_MODULE,
+	.open       = ezdma_open,
+	.read       = ezdma_read,
+	.write      = ezdma_write,
+	.release    = ezdma_release,
+	//.poll       = ezdma_poll,
 };
 
 
@@ -181,11 +184,28 @@ static int ezdma_open(struct inode *inode, struct file *filp)
     }
     else
     {
+
+        if ( (rv = ezdma_configure_dma_device( p_info )) )
+        {
+            printk( KERN_ERR KBUILD_MODNAME 
+                    ": %s: failed to configure, returned: %d\n", 
+                    p_info->name, rv);
+            goto err_out;
+        }
+        else
+        {
+            printk( KERN_DEBUG KBUILD_MODNAME
+                    ": %s: configured DMA device OK\n",
+                    p_info->name);
+        }
+
+
         p_info->in_use = 1;
         filp->private_data = p_info;
         atomic_set( &p_info->accepting, 1 );
     }
     
+    err_out:
     up( &p_info->sem );
 
     return rv;
@@ -341,7 +361,7 @@ static int ezdma_prepare_for_dma(
     {
         struct dma_async_tx_descriptor * txn_desc;
         struct scatterlist * const sgl = p_info->inflight.table.sgl;
-        dma_cookie_t cookie;
+	    dma_cookie_t cookie;
 
         txn_desc = dmaengine_prep_slave_sg(
                 p_info->chan,
@@ -364,7 +384,7 @@ static int ezdma_prepare_for_dma(
 
         p_info->state = DMA_IN_FLIGHT;
 
-        cookie = dmaengine_submit(txn_desc);
+	    cookie = dmaengine_submit(txn_desc);
 
         if ( cookie < DMA_MIN_COOKIE )
         {
@@ -673,6 +693,22 @@ static void ezdma_teardown_device( struct ezdma_drvdata * p_info )
     p_info->ezdma_devt = MKDEV(0,0);
 }
 
+static int ezdma_configure_dma_device( struct ezdma_drvdata * p_info )
+{
+    int rv;
+    struct xilinx_dma_config cfg;
+
+    cfg.coalesc = 1;    // Leave as default value.
+    cfg.delay = 0;      // Disable IRQDelay interrupt.
+
+    rv = dmaengine_device_control(
+            p_info->chan,
+            DMA_SLAVE_CONFIG,
+            (unsigned long)&cfg);
+
+    return rv;
+}
+
 static void teardown_devices( struct ezdma_pdev_drvdata * p_pdev_info, struct platform_device *pdev);
 
 static int create_devices( struct ezdma_pdev_drvdata * p_pdev_info, struct platform_device *pdev)
@@ -825,7 +861,7 @@ static void teardown_devices( struct ezdma_pdev_drvdata * p_pdev_info, struct pl
 
         if ( p_info->chan )
         {
-            dmaengine_terminate_all(p_info->chan);
+            dmaengine_terminate_all(p_info->chan);  // erases custom configuration
             dma_release_channel(p_info->chan);
         }
 
