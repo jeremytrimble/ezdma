@@ -29,7 +29,7 @@
 #include <asm/param.h>  /* HZ */
 #include <linux/semaphore.h>
 #include <linux/mutex.h>
-#include <linux/pagemap.h>
+#include <linux/mm.h>
 
 #include <linux/dmaengine.h>
 #include <linux/dma-mapping.h>
@@ -428,7 +428,7 @@ static void ezdma_unprepare_after_dma( struct ezdma_drvdata * p_info )
                 struct page * const page = p_info->inflight.pinned_pages[i];
 
                 set_page_dirty( page );
-                page_cache_release( page );
+                put_page( page );
             }
         }
     }
