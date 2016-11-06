@@ -26,10 +26,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <assert.h>
 
-const int NUM_TRIALS = 100000;
-
-//<#define PACKET_SIZE (2048)
-#define PACKET_SIZE (4096)
+#include "stream_shared.h"
 
 uint8_t tx_buf[PACKET_SIZE];
 uint8_t rx_buf[PACKET_SIZE];
@@ -46,53 +43,27 @@ int main(int argc, char *argv[])
         perror("can't open receive loop device\n");
         return 2;
     }
+    
+    prepare_tx_buffer(&tx_buf);
+    printf("Receiving %d %d-byte packets\n", NUM_TRIALS, PACKET_SIZE);
 
-    for (i = 0; i < PACKET_SIZE; ++i)
-        tx_buf[i] = i; // automatically mod-256
-
-
-    i = 0;
-    while ( i < NUM_TRIALS )
+    for (i = 0; i < NUM_TRIALS; ++i)
     {
         //printf("trial %d\n", i);
         assert( PACKET_SIZE == read (rx_fd, rx_buf, PACKET_SIZE) );
         if ( i == 0 )
             assert( !clock_gettime(CLOCK_MONOTONIC, &tick) );
 
-        int j;
-        for (j = 0; j < PACKET_SIZE; ++j)
-        {
-            if ( rx_buf[j] != tx_buf[j] )
-            {
-                printf("ERROR IN DATA\n");
-                printf("  @ j=%d: rx_buf[%d]: %u, tx_buf[%d]: %u\n",
-                    j, j, rx_buf[j], j, tx_buf[j]);
-                return 2;
-            }
-        }
+        if ( check_buffer(&rx_buf, &tx_buf) == 2 )
+            return 2;
 
-        tx_buf[i % PACKET_SIZE] += 5;  // modify data each time
-
-        i++;
+        change_tx_buffer(&tx_buf, i);
     }
 
     assert( !clock_gettime(CLOCK_MONOTONIC, &tock) );
 
-    {
-        double start, end, diff, bytes_per_sec;
-        double numBytes = (double)(NUM_TRIALS - 1) * PACKET_SIZE;
-
-        start = tick.tv_sec + tick.tv_nsec/1e9;
-        end   = tock.tv_sec + tock.tv_nsec/1e9;
-        diff  = end - start;
-
-        bytes_per_sec = numBytes / (double)(1<<20) / diff;
-
-        printf("received %d %d-byte packets in %.9f sec: %.3f MB/s\n",
-                NUM_TRIALS - 1, PACKET_SIZE, diff, bytes_per_sec);
-    }
+    print_throughput(&tick, &tock);
  
     return 0;
 }
-
 
