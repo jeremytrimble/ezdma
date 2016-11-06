@@ -1,6 +1,7 @@
 /*
-ezdma loopback speed test
+ezdma loopback stream receiver
 Copyright (C) 2015 Jeremy Trimble
+Copyright (C) 2016 Jan Binder
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,6 +28,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 const int NUM_TRIALS = 100000;
 
+//<#define PACKET_SIZE (2048)
 #define PACKET_SIZE (4096)
 
 uint8_t tx_buf[PACKET_SIZE];
@@ -37,44 +39,36 @@ int main(int argc, char *argv[])
     struct timespec tick, tock;
     int i;
 
-    int tx_fd = open("/dev/loop_tx", O_WRONLY);
     int rx_fd = open("/dev/loop_rx", O_RDONLY);
 
-    if ( tx_fd < 0 || rx_fd < 0 )
+    if ( rx_fd < 0 )
     {
-        perror("can't open loop devices\n");
+        perror("can't open receive loop device\n");
         return 2;
     }
 
     for (i = 0; i < PACKET_SIZE; ++i)
         tx_buf[i] = i; // automatically mod-256
 
-    assert( !clock_gettime(CLOCK_MONOTONIC, &tick) );
 
     i = 0;
     while ( i < NUM_TRIALS )
     {
         //printf("trial %d\n", i);
-        assert( PACKET_SIZE == write(tx_fd, tx_buf, PACKET_SIZE) );
         assert( PACKET_SIZE == read (rx_fd, rx_buf, PACKET_SIZE) );
-        //{
-        //int rv = read (rx_fd, rx_buf, PACKET_SIZE);
-        //printf("read returned %d\n", rv);
-        //}
+        if ( i == 0 )
+            assert( !clock_gettime(CLOCK_MONOTONIC, &tick) );
 
+        int j;
+        for (j = 0; j < PACKET_SIZE; ++j)
         {
-            int j;
-            for (j = 0; j < PACKET_SIZE; ++j)
+            if ( rx_buf[j] != tx_buf[j] )
             {
-                if ( rx_buf[j] != tx_buf[j] )
-                {
-                    printf("ERROR IN DATA\n");
-                    printf("  @ j=%d: rx_buf[%d]: %u, tx_buf[%d]: %u\n",
-                        j, j, rx_buf[j], j, tx_buf[j]);
-                    return 2;
-                }
+                printf("ERROR IN DATA\n");
+                printf("  @ j=%d: rx_buf[%d]: %u, tx_buf[%d]: %u\n",
+                    j, j, rx_buf[j], j, tx_buf[j]);
+                return 2;
             }
-
         }
 
         tx_buf[i % PACKET_SIZE] += 5;  // modify data each time
@@ -86,7 +80,7 @@ int main(int argc, char *argv[])
 
     {
         double start, end, diff, bytes_per_sec;
-        double numBytes = (double)NUM_TRIALS * PACKET_SIZE;
+        double numBytes = (double)(NUM_TRIALS - 1) * PACKET_SIZE;
 
         start = tick.tv_sec + tick.tv_nsec/1e9;
         end   = tock.tv_sec + tock.tv_nsec/1e9;
@@ -94,10 +88,10 @@ int main(int argc, char *argv[])
 
         bytes_per_sec = numBytes / (double)(1<<20) / diff;
 
-        printf("sent %d %d-byte packets in %.9f sec: %.3f MB/s\n",
-                NUM_TRIALS, PACKET_SIZE, diff, bytes_per_sec);
+        printf("received %d %d-byte packets in %.9f sec: %.3f MB/s\n",
+                NUM_TRIALS - 1, PACKET_SIZE, diff, bytes_per_sec);
     }
-    
+ 
     return 0;
 }
 
