@@ -519,8 +519,12 @@ static ssize_t ezdma_read(struct file *filp, char __user *userbuf, size_t count,
         spin_lock_irq(&p_info->state_lock);
         if ( p_info->state == DMA_IN_FLIGHT && -ERESTARTSYS == wait_rv )
         {
-            dmaengine_terminate_all( p_info->chan );
             rv = wait_rv;
+            spin_unlock_irq(&p_info->state_lock);
+
+            dmaengine_terminate_all( p_info->chan );
+
+            spin_lock_irq(&p_info->state_lock);
         }
 
         ezdma_unprepare_after_dma( p_info );    // sets us back to DMA_IDLE
@@ -590,8 +594,12 @@ static ssize_t ezdma_write(struct file *filp, const char __user *userbuf, size_t
         spin_lock_irq(&p_info->state_lock);
         if ( p_info->state == DMA_IN_FLIGHT && -ERESTARTSYS == wait_rv )
         {
-            dmaengine_terminate_all( p_info->chan );
             rv = wait_rv;
+            spin_unlock_irq(&p_info->state_lock);
+
+            dmaengine_terminate_all( p_info->chan );
+
+            spin_lock_irq(&p_info->state_lock);
         }
 
         ezdma_unprepare_after_dma( p_info );    // sets us back to DMA_IDLE
