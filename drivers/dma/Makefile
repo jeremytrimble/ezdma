@@ -18,7 +18,7 @@
 
 # Cross-compile for ARM by default.
 ARCH?=arm
-CROSS_COMPILE?=arm-linux-gnueabi-
+CROSS_COMPILE?=arm-linux-gnueabihf-
 
 # If desired, you can specify a default KERNELDIR by uncommenting the line
 # below and placing your desired directory after the ?=

@@ -2,14 +2,16 @@
     /* Loopback DMA setup */
     
     loopback_dma: axidma@40400000 {
+        compatible = "xlnx,axi-dma-1.00.a";
         #dma-cells = <1>;
-        compatible = "xlnx,axi-dma";
         reg = < 0x40400000 0x10000 >;
-
+        clocks = <&clkc 15>, <&clkc 15>, <&clkc 15>, <&clkc 15>; // fclk0 from clock controller
+        clock-names = "s_axi_lite_aclk", "m_axi_mm2s_aclk", "m_axi_s2mm_aclk", "m_axi_sg_aclk";
         xlnx,include-sg;
+
         loopback_dma_mm2s_chan: dma-channel@40400000 {
             compatible = "xlnx,axi-dma-mm2s-channel";
-            interrupt-parent = <&gic>;
+            interrupt-parent = <&intc>;
             interrupts = <0 31 4>;  // concat port 2
                                     // IRQ_F2P[15:0] == [91:84],[68:61]
                                     // 2 -> 63 -> 63 - 32 = 31
@@ -22,7 +24,7 @@
 
         loopback_dma_s2mm_chan: dma-channel@40400030 {
             compatible = "xlnx,axi-dma-s2mm-channel";
-            interrupt-parent = <&gic>;
+            interrupt-parent = <&intc>;
             interrupts = <0 32 4>;  // concat port 3 
                                     // IRQ_F2P[15:0] == [91:84],[68:61]
                                     // 3 -> 64 -> 64 - 32 = 32

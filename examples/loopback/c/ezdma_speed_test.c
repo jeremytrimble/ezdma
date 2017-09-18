@@ -25,13 +25,9 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <assert.h>
 
-/* compile with:
-   make CFLAGS=-O2 LDFLAGS+=-lrt ezdma_speed_test
- */
+const int NUM_TRIALS = 100000;
 
-const int NUM_TRIALS = 10000;
-
-#define PACKET_SIZE (2048)
+#define PACKET_SIZE (4096)
 
 uint8_t tx_buf[PACKET_SIZE];
 uint8_t rx_buf[PACKET_SIZE];
@@ -55,8 +51,10 @@ int main(int argc, char *argv[])
 
     assert( !clock_gettime(CLOCK_MONOTONIC, &tick) );
 
+    i = 0;
     while ( i < NUM_TRIALS )
     {
+        //printf("trial %d\n", i);
         assert( PACKET_SIZE == write(tx_fd, tx_buf, PACKET_SIZE) );
         assert( PACKET_SIZE == read (rx_fd, rx_buf, PACKET_SIZE) );
         //{
@@ -87,16 +85,16 @@ int main(int argc, char *argv[])
     assert( !clock_gettime(CLOCK_MONOTONIC, &tock) );
 
     {
-        float start, end, diff, bytes_per_sec;
-        float numBytes = (float)NUM_TRIALS * PACKET_SIZE;
+        double start, end, diff, bytes_per_sec;
+        double numBytes = (double)NUM_TRIALS * PACKET_SIZE;
 
         start = tick.tv_sec + tick.tv_nsec/1e9;
         end   = tock.tv_sec + tock.tv_nsec/1e9;
         diff  = end - start;
 
-        bytes_per_sec = numBytes / (1<<20) / diff;
+        bytes_per_sec = numBytes / (double)(1<<20) / diff;
 
-        printf("sent %d %d-byte packets in %.3f sec: %.3f MB/s\n",
+        printf("sent %d %d-byte packets in %.9f sec: %.3f MB/s\n",
                 NUM_TRIALS, PACKET_SIZE, diff, bytes_per_sec);
     }
     
