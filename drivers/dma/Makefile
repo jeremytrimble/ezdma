@@ -3,17 +3,8 @@
 #
 # This Makefile assumes that you've defined the "KERNEL_SRC" variable to point
 # to the top-level directory of a linux source tree which you'd like to build
-# ezdma against.  You can specify KERNEL_SRC either on the make command line, or
-# in your environment, or optionally uncomment the KERNEL_SRC?= line below and
-# set the default value within this file.
-#
-# This Makefile is parsed twice: 
-#
-#  - In the first pass, it make -C's into your KERNEL_SRC.
-#
-#  - In the second pass, it sets up make variables that cause the ezdma module
-#  to be built against the kernel at your KERNEL_SRC.
-#
+# ezdma against. You can specify KERNEL_SRC either on the make command line, or
+# in your environment.
 #
 
 obj-m += ezdma.o
