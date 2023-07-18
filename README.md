@@ -39,7 +39,7 @@ See [Documentation/devicetree/bindings/dma/ezdma.txt](../master/Documentation/de
 
 A Makefile for out-of-tree building is supplied.  You just need to point it to the top-level directory of a kernel tree that you've already compiled.
 
-    make KERNELDIR=/path/to/your/kernel
+    make KERNEL_SRC=/path/to/your/kernel
 
 Currently the Makefile assumes you want to cross-compile for ARM by default, but you're free to override the `ARCH` and/or `CROSS_COMPILE` variables on the command line or on in your environment.  (I'd be interested to hear how it works on non-ARM platforms, as well!)
 
